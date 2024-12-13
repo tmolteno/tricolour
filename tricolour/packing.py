@@ -90,7 +90,7 @@ def _create_window_dask(name, ntime, nchan, nbl, ncorr, token,
 
     graph = HighLevelGraph.from_collections(collection_name, layers, ())
     chunks = ((0,),)  # One chunk containing single zarr array object
-    return da.Array(graph, collection_name, chunks, dtype=np.object)
+    return da.Array(graph, collection_name, chunks, dtype=object)
 
 
 def create_vis_windows(ntime, nchan, nbl, ncorr, token,

@@ -9,11 +9,11 @@ from functools import partial
 import logging
 import logging.handlers
 from multiprocessing.pool import ThreadPool
-import pkg_resources
 import os
 from os.path import join as pjoin
 import sys
 import time
+import importlib
 
 import dask
 import dask.array as da
@@ -79,8 +79,7 @@ def create_logger():
 # Create the log object
 log = create_logger()
 
-DEFAULT_CONFIG = pkg_resources.resource_filename('tricolour',
-                                                 pjoin("conf", "default.yaml"))
+DEFAULT_CONFIG = str(importlib.resources.files('tricolour') / pjoin("conf", "default.yaml"))
 
 
 def load_config(config_file):

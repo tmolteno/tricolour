@@ -14,10 +14,11 @@ except ImportError:
 
 import numpy as np
 import numba
+from numba.extending import overload
 
 from tricolour.util import casa_style_range
 
-warnings.simplefilter('ignore', np.RankWarning)
+warnings.simplefilter('ignore', np.exceptions.RankWarning)
 
 MAD_NORMAL = 1.4826
 """Ratio between `median absolute deviation`_ and
@@ -189,14 +190,12 @@ def _as_min_dtype(value):
         dtype = np.int64
     return np.array(value, dtype)
 
+# generaged_jit is deprecated.
+# see https://numba.readthedocs.io/en/stable/reference/deprecation.html#deprecation-of-generated-jit
+# replace with overload
 
-@numba.generated_jit(nopython=True, nogil=True, cache=True)
-def _asbool(data):
-    """Create a boolean array with the same values as `data`.
-
-    The `data` contain only 0's and 1's. If possible, a view is returned,
-    otherwise a copy.
-    """
+# A pure python implementation that will run if the JIT compiler is disabled.
+def asbool_select(data):
     if isinstance(data, np.ndarray):
         # We're being called as a regular function due to NUMBA_DISABLE_JIT.
         if data.dtype.itemsize == 1:
@@ -209,6 +208,53 @@ def _asbool(data):
         return lambda data: data.view(np.bool_)
     else:
         return lambda data: data.astype(np.bool_)
+
+# An overload for the `select` function cf. generated_jit
+@overload(asbool_select)
+def ol_asbool_select(data):
+    if isinstance(data, np.ndarray):
+        def impl(data):
+            if data.dtype.itemsize == 1:
+                return data.view(np.bool_)
+            else:
+                return data.astype(np.bool_)
+        return impl
+    elif (isinstance(data.dtype, numba.types.Boolean)
+            or (isinstance(data.dtype, numba.types.Integer)
+            and data.dtype.bitwidth == 8)):
+        def impl(data):
+            return lambda data: data.view(np.bool_)
+        return impl
+    else:
+        def impl(data):
+            return lambda data: data.astype(np.bool_)
+        return impl
+
+
+@numba.njit
+def _asbool(data):
+    return asbool_select(data)
+
+
+# @numba.generated_jit(nopython=True, nogil=True, cache=True)
+# def _asbool(data):
+#     """Create a boolean array with the same values as `data`.
+#
+#     The `data` contain only 0's and 1's. If possible, a view is returned,
+#     otherwise a copy.
+#     """
+#     if isinstance(data, np.ndarray):
+#         # We're being called as a regular function due to NUMBA_DISABLE_JIT.
+#         if data.dtype.itemsize == 1:
+#             return data.view(np.bool_)
+#         else:
+#             return data.astype(np.bool_)
+#     elif (isinstance(data.dtype, numba.types.Boolean)
+#             or (isinstance(data.dtype, numba.types.Integer)
+#                 and data.dtype.bitwidth == 8)):
+#         return lambda data: data.view(np.bool_)
+#     else:
+#         return lambda data: data.astype(np.bool_)
 
 
 @numba.jit(nopython=True, nogil=True, cache=True)
