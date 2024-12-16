@@ -1170,13 +1170,7 @@ def sum_threshold_flagger(vis, flags, outlier_nsigma=4.5,
     freq_chunks = freq_chunks
     average_freq = _as_min_dtype(average_freq)
 
-    # BUG the following code is a terrible idea if nchan is on a dtype size boundary because adding
-    # anything to this will wrap. e.g.
-    # >>> x = np.array(255, np.uint8)
-    # >>> y = np.array(1, np.uint8)
-    # >>> x + y
-    # 0
-    # >>>
+    # Casting to int fixes an overflow error...
     averaged_channels = (int(nchan) + int(average_freq) - 1) // int(average_freq)
 
     # Set up frequency chunks
