@@ -27,7 +27,7 @@ standard deviation of a Gaussian distribution.
 """  # noqa
 
 
-@numba.njit(nogil=True, cache=True)
+@numba.jit(nopython=True, nogil=True, cache=True)
 def flag_nans_and_zeros(vis_windows, flag_windows):
     """
     Flag nan and zero visibilities.
@@ -194,8 +194,25 @@ def _as_min_dtype(value):
 # see https://numba.readthedocs.io/en/stable/reference/deprecation.html#deprecation-of-generated-jit
 # replace with overload
 
-# A pure python implementation that will run if the JIT compiler is disabled.
-def asbool_select(data):
+
+@numba.jit(nopython=True, nogil=True, cache=True)
+def _asbool(data):
+    return _asbool_impl(data)
+
+
+def _asbool_impl(data):
+    if data.dtype.itemsize == 1:
+        return data.view(np.bool_)
+    else:
+        return data.astype(np.bool_)
+
+@numba.extending.overload(_asbool_impl, nopython=True, nogil=True, cache=True)
+def _asbool_impl_jit(data):
+    """Create a boolean array with the same values as `data`.
+
+    The `data` contain only 0's and 1's. If possible, a view is returned,
+    otherwise a copy.
+    """
     if isinstance(data, np.ndarray):
         # We're being called as a regular function due to NUMBA_DISABLE_JIT.
         if data.dtype.itemsize == 1:
@@ -208,53 +225,6 @@ def asbool_select(data):
         return lambda data: data.view(np.bool_)
     else:
         return lambda data: data.astype(np.bool_)
-
-# An overload for the `select` function cf. generated_jit
-@overload(asbool_select)
-def ol_asbool_select(data):
-    if isinstance(data, np.ndarray):
-        def impl(data):
-            if data.dtype.itemsize == 1:
-                return data.view(np.bool_)
-            else:
-                return data.astype(np.bool_)
-        return impl
-    elif (isinstance(data.dtype, numba.types.Boolean)
-            or (isinstance(data.dtype, numba.types.Integer)
-            and data.dtype.bitwidth == 8)):
-        def impl(data):
-            return lambda data: data.view(np.bool_)
-        return impl
-    else:
-        def impl(data):
-            return lambda data: data.astype(np.bool_)
-        return impl
-
-
-@numba.njit
-def _asbool(data):
-    return asbool_select(data)
-
-
-# @numba.generated_jit(nopython=True, nogil=True, cache=True)
-# def _asbool(data):
-#     """Create a boolean array with the same values as `data`.
-#
-#     The `data` contain only 0's and 1's. If possible, a view is returned,
-#     otherwise a copy.
-#     """
-#     if isinstance(data, np.ndarray):
-#         # We're being called as a regular function due to NUMBA_DISABLE_JIT.
-#         if data.dtype.itemsize == 1:
-#             return data.view(np.bool_)
-#         else:
-#             return data.astype(np.bool_)
-#     elif (isinstance(data.dtype, numba.types.Boolean)
-#             or (isinstance(data.dtype, numba.types.Integer)
-#                 and data.dtype.bitwidth == 8)):
-#         return lambda data: data.view(np.bool_)
-#     else:
-#         return lambda data: data.astype(np.bool_)
 
 
 @numba.jit(nopython=True, nogil=True, cache=True)
@@ -1200,7 +1170,14 @@ def sum_threshold_flagger(vis, flags, outlier_nsigma=4.5,
     freq_chunks = freq_chunks
     average_freq = _as_min_dtype(average_freq)
 
-    averaged_channels = (nchan + average_freq - 1) // average_freq
+    # BUG the following code is a terrible idea if nchan is on a dtype size boundary because adding
+    # anything to this will wrap. e.g.
+    # >>> x = np.array(255, np.uint8)
+    # >>> y = np.array(1, np.uint8)
+    # >>> x + y
+    # 0
+    # >>>
+    averaged_channels = (int(nchan) + int(average_freq) - 1) // int(average_freq)
 
     # Set up frequency chunks
     freq_chunk_ends = np.linspace(
@@ -1337,8 +1314,8 @@ class SumThresholdFlagger(object):
         """
         ncorrprod, ntime, nchan = in_data.shape
 
-        averaged_channels = ((nchan + self.average_freq - 1) //
-                             self.average_freq)
+        averaged_channels = ((int(nchan) + int(self.average_freq) - 1) //
+                             int(self.average_freq))
 
         # Set up frequency chunks
         freq_chunk_ends = np.linspace(
