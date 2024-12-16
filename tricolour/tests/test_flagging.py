@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`tricolour.flagging`."""
-
+import unittest
 import numpy as np
 import scipy.interpolate
 from scipy.ndimage import gaussian_filter1d, gaussian_filter
@@ -9,7 +9,7 @@ import pytest
 from tricolour import flagging
 
 
-class TestAsbool(object):
+class TestAsbool(unittest.TestCase):
     def _test(self, dtype, expect_view):
         a = np.array([0, 1, 1, 0, 1, 0, 0, 1], dtype)
         expected = a.astype(np.bool_)
@@ -33,7 +33,7 @@ class TestAsbool(object):
         self._test(np.bool_, True)
 
 
-class TestAverageFreq(object):
+class TestAverageFreq(unittest.TestCase):
     def setup(self):
         self.small_data = np.arange(30, dtype=np.float32).reshape(1, 5, 6)
         self.small_data = self.small_data.repeat(2, axis=0)
@@ -151,7 +151,7 @@ def test_time_median():
     np.testing.assert_array_equal(expected_flags, out_flags)
 
 
-class TestMedianAbs(object):
+class TestMedianAbs(unittest.TestCase):
     """Tests for :func:`katsdpsigproc.rfi.flagging._median_abs` and
     :func:`katsdpsigproc.rfi.flagging._median_abs_axis0`."""
 
@@ -179,7 +179,7 @@ class TestMedianAbs(object):
         np.testing.assert_array_equal(expected, out)
 
 
-class TestLinearlyInterpolateNans(object):
+class TestLinearlyInterpolateNans(unittest.TestCase):
     """
     Tests for :func:`katsdpsigproc.rfi.flagging._linearly_interpolate_nans`.
     """
@@ -224,7 +224,7 @@ class TestLinearlyInterpolateNans(object):
         np.testing.assert_allclose(expected, y)
 
 
-class TestBoxGaussianFilter(object):
+class TestBoxGaussianFilter(unittest.TestCase):
     def test_one_pass(self):
         """Test that _box_gaussian_filter1d places the box correctly"""
         a = np.array([50.0, 10.0, 60.0, -70.0, 30.0, 20.0, -15.0], np.float32)
@@ -289,7 +289,7 @@ class TestBoxGaussianFilter(object):
         np.testing.assert_allclose(fdata[:, 80:120], fcore, rtol=1e-5)
 
 
-class TestMaskedGaussianFilter(object):
+class TestMaskedGaussianFilter(unittest.TestCase):
     def setup(self):
         self.rs = np.random.RandomState(seed=1)
         shape = (77, 53)
@@ -332,7 +332,7 @@ class TestMaskedGaussianFilter(object):
         assert 0 < np.sum(np.isnan(expected))
 
 
-class TestGetBackground2D(object):
+class TestGetBackground2D(unittest.TestCase):
     """Tests for :func:`katsdpsigproc.rfi.flagging._get_background2d`.
 
     This is a difficult function to test, because it's not really practical to
@@ -421,7 +421,7 @@ class TestGetBackground2D(object):
         np.testing.assert_allclose(expected, background, rtol=1e-2)
 
 
-class TestSumThreshold(object):
+class TestSumThreshold(unittest.TestCase):
     def setup(self):
         self.small_data = np.arange(30, dtype=np.float32).reshape(5, 6)
         self.small_flags = np.zeros(self.small_data.shape, np.bool_)
@@ -501,7 +501,7 @@ class TestSumThreshold(object):
                                       out_flags[70, :4])
 
 
-class TestSumThresholdFlagger(object):
+class TestSumThresholdFlagger(unittest.TestCase):
     """Tests for :class:`katsdpsigproc.rfi.flagging.SumThresholdFlagger`."""
 
     def setup(self):
