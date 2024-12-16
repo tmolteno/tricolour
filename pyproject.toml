@@ -27,6 +27,13 @@ testing = ["pytest"]
 tbump = "^6.11.0"
 pytest = "^8.3.4"
 
+
+[tool.poetry.group.testing.dependencies]
+pytest = "^8.3.4"
+flake8 = "^7.1.1"
+requests = "^2.32.3"
+gdown = "^5.2.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
