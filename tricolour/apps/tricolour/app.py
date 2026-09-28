@@ -12,7 +12,9 @@ from multiprocessing.pool import ThreadPool
 import os
 from os.path import join as pjoin
 import sys
+import threading
 import time
+from timeit import default_timer
 import importlib.resources
 
 import dask
@@ -93,6 +95,33 @@ def create_logger():
 log = create_logger()
 
 DEFAULT_CONFIG = str(importlib.resources.files('tricolour') / pjoin("conf", "default.yaml"))
+
+
+class _LogProgressBar(ProgressBar):
+    """A dask ProgressBar that draws every ``dt`` but stops as soon as the
+    compute ends.
+
+    dask's timer thread sleeps ``dt`` between draws and ``_finish`` joins it,
+    so with the non-interactive ``dt`` of five minutes a run sat idle for up
+    to five minutes after its last task -- no CPU, no I/O -- before exiting.
+    Here the timer waits on an event that ``_finish`` sets.
+    """
+
+    def _start(self, dsk):
+        self._wake = threading.Event()
+        super()._start(dsk)
+
+    def _timer_func(self):
+        while self._running:
+            elapsed = default_timer() - self._start_time
+            if elapsed > self._minimum:
+                self._update_bar(elapsed)
+            self._wake.wait(self._dt)
+
+    def _finish(self, dsk, state, errored):
+        self._running = False
+        self._wake.set()
+        super()._finish(dsk, state, errored)
 
 
 def load_config(config_file):
@@ -508,7 +537,7 @@ def _main(args):
             else:
                 # Non-interactive, emit a bar every 5 minutes so
                 # as not to spam the log
-                stack.enter_context(ProgressBar(minimum=1, dt=5*60))
+                stack.enter_context(_LogProgressBar(minimum=1, dt=5*60))
 
             _, original_stats, final_stats = dask.compute(write_computes,
                                                           original_stats,
