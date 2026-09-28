@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`tricolour.flagging`."""
-import unittest
+
 import numpy as np
 import scipy.interpolate
 from scipy.ndimage import gaussian_filter1d, gaussian_filter
 import pytest
-
 from tricolour import flagging
+import unittest
 
 
 class TestAsbool(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestAsbool(unittest.TestCase):
 
 
 class TestAverageFreq(unittest.TestCase):
-    def setup(self):
+    def setUp(self):
         self.small_data = np.arange(30, dtype=np.float32).reshape(1, 5, 6)
         self.small_data = self.small_data.repeat(2, axis=0)
         self.small_flags = np.zeros(self.small_data.shape, np.bool_)
@@ -155,7 +155,7 @@ class TestMedianAbs(unittest.TestCase):
     """Tests for :func:`katsdpsigproc.rfi.flagging._median_abs` and
     :func:`katsdpsigproc.rfi.flagging._median_abs_axis0`."""
 
-    def setup(self):
+    def setUp(self):
         self.data = np.array([[-2.0, -6.0, 4.5], [1.5, 3.3, 0.5]], np.float32)
         self.flags = np.array([[0, 0, 0], [0, 1, 0]], np.uint8)
 
@@ -184,7 +184,7 @@ class TestLinearlyInterpolateNans(unittest.TestCase):
     Tests for :func:`katsdpsigproc.rfi.flagging._linearly_interpolate_nans`.
     """
 
-    def setup(self):
+    def setUp(self):
         self.y = np.array([np.nan, np.nan, 4.0, np.nan, np.nan,
                            10.0, np.nan, -2.0, np.nan, np.nan])
         self.expected = np.array([4.0, 4.0, 4.0, 6.0, 8.0,
@@ -290,7 +290,7 @@ class TestBoxGaussianFilter(unittest.TestCase):
 
 
 class TestMaskedGaussianFilter(unittest.TestCase):
-    def setup(self):
+    def setUp(self):
         self.rs = np.random.RandomState(seed=1)
         shape = (77, 53)
         self.data = self.rs.uniform(size=shape).astype(np.float32)
@@ -340,7 +340,7 @@ class TestGetBackground2D(unittest.TestCase):
     where large regions are flagged.
     """
 
-    def setup(self):
+    def setUp(self):
         self.shape = (95, 86)
         self.data = np.ones(self.shape, np.float32) * 7.5
         self.flags = np.zeros(self.shape, np.uint8)
@@ -422,7 +422,7 @@ class TestGetBackground2D(unittest.TestCase):
 
 
 class TestSumThreshold(unittest.TestCase):
-    def setup(self):
+    def setUp(self):
         self.small_data = np.arange(30, dtype=np.float32).reshape(5, 6)
         self.small_flags = np.zeros(self.small_data.shape, np.bool_)
         self.small_flags[3, :] = 1
@@ -504,7 +504,7 @@ class TestSumThreshold(unittest.TestCase):
 class TestSumThresholdFlagger(unittest.TestCase):
     """Tests for :class:`katsdpsigproc.rfi.flagging.SumThresholdFlagger`."""
 
-    def setup(self):
+    def setUp(self):
         self.flagger = flagging.SumThresholdFlagger()
 
     def _make_background(self, shape, rs):

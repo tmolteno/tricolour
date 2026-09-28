@@ -343,7 +343,7 @@ def pack_data(time_inv, ubl,
                            flags, ("row", "chan", "corr"),
                            vis_win_obj, ("windim",),
                            flag_win_obj, ("windim",),
-                           dtype=np.bool)
+                           dtype=bool)
 
     # Expose visibility data at it's full resolution
     vis_windows = da.blockwise(_packed_windows, _WINDOW_SCHEMA,
